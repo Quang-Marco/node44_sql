@@ -1,4 +1,4 @@
-# tạo table users
+-- table users
 CREATE TABLE users(
 	user_id INT PRIMARY KEY AUTO_INCREMENT,
 	full_name VARCHAR(50) NOT NULL,
@@ -6,7 +6,6 @@ CREATE TABLE users(
 	pass_word VARCHAR(255) NOT NULL
 )
 
--- Insert 20 sample rows into the users table
 INSERT INTO users (full_name, email, pass_word) VALUES
 ('John Doe', 'john.doe@example.com', 'password123'),
 ('Jane Smith', 'jane.smith@example.com', 'securepass'),
@@ -59,13 +58,12 @@ INSERT INTO restaurant (res_name, image, description) VALUES
 ('Fusion Flavors', 'https://example.com/images/fusion_flavors.jpg', 'A fusion restaurant combining flavors from different cultures in exciting ways.'),
 ('The Salad Bar', 'https://example.com/images/salad_bar.jpg', 'Healthy and refreshing salads with a wide range of toppings and dressings.');
 
--- table food type
+-- table food_type
 create table food_type(
 	type_id INT PRIMARY KEY AUTO_INCREMENT,
 	type_name VARCHAR(255) NOT NULL
 )
 
--- Insert 20 sample rows into the food_type table
 INSERT INTO food_type (type_name) VALUES
 ('Italian'),
 ('Chinese'),
@@ -122,21 +120,7 @@ INSERT INTO food (food_name, image, price, description, type_id) VALUES
 ('Jerk Chicken', 'https://example.com/images/jerk_chicken.jpg', 12.99, 'Caribbean spicy grilled chicken with jerk seasoning', 19),
 ('Schnitzel', 'https://example.com/images/schnitzel.jpg', 11.99, 'German breaded and fried meat cutlet', 20);
 
--- table order
-CREATE TABLE orders(
-	order_id INT PRIMARY KEY AUTO_INCREMENT,
-	user_id INT,
-	FOREIGN KEY(user_id) REFERENCES users(user_id),
-	
-	food_id INT,
-	FOREIGN KEY(food_id) REFERENCES food(food_id),
-	
-	amount INT,
-	discount_code VARCHAR(30),
-	
-	arr_sub_id VARCHAR(255)
-)
-
+-- table rate_res
 CREATE TABLE rate_res (
 	rate_res_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
@@ -169,7 +153,7 @@ INSERT INTO rate_res (user_id, res_id, amount, date_rate) VALUES
 (1, 8, 4, '2024-09-07 20:00:00'),
 (2, 7, 5, '2024-09-07 20:30:00');
 
--- Create the like_res table
+-- table like_res
 CREATE TABLE like_res (
 	like_res_id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT,
@@ -178,8 +162,6 @@ CREATE TABLE like_res (
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
     FOREIGN KEY (res_id) REFERENCES restaurant(res_id) ON DELETE CASCADE
 );
-ADD COLUMN
-
 
 INSERT INTO like_res (user_id, res_id, date_like) VALUES
 (1, 1, '2024-09-01 09:30:00'),
@@ -203,7 +185,20 @@ INSERT INTO like_res (user_id, res_id, date_like) VALUES
 (1, 8, '2024-09-07 18:30:00'),
 (2, 7, '2024-09-07 19:00:00');
 
-
+-- table orders
+CREATE TABLE orders(
+	order_id INT PRIMARY KEY AUTO_INCREMENT,
+	user_id INT,
+	FOREIGN KEY(user_id) REFERENCES users(user_id),
+	
+	food_id INT,
+	FOREIGN KEY(food_id) REFERENCES food(food_id),
+	
+	amount INT,
+	discount_code VARCHAR(30),
+	
+	arr_sub_id VARCHAR(255)
+)
 
 INSERT INTO orders (user_id, food_id, amount, discount_code, arr_sub_id) VALUES
 (1, 1, 2, 'DISCOUNT10', '1,2'),
@@ -226,3 +221,38 @@ INSERT INTO orders (user_id, food_id, amount, discount_code, arr_sub_id) VALUES
 (3, 8, 1, 'WELCOME5', '18'),
 (1, 9, 2, NULL, '19'),
 (2, 10, 1, 'HOLIDAY15', '20');
+
+
+-- Tìm 5 người like nhà hàng nhiều nhất
+SELECT u.user_id, u.full_name, COUNT(lr.res_id) AS like_count
+FROM users u
+JOIN like_res lr ON u.user_id = lr.user_id
+GROUP BY u.user_id, u.full_name
+ORDER BY like_count DESC
+LIMIT 5;
+
+--Tìm  2 nhà hàng có nhiều lượt like nhất
+SELECT r.res_id, r.res_name, COUNT(lr.user_id) AS like_count
+FROM restaurant r
+JOIN like_res lr ON r.res_id = lr.res_id
+GROUP BY r.res_id, r.res_name
+ORDER BY like_count DESC
+LIMIT 2;
+
+-- Tìm người đặt hàng nhiều nhất
+SELECT u.user_id, u.full_name, COUNT(o.food_id) AS order_count
+FROM users u
+JOIN orders o ON u.user_id = o.user_id
+GROUP BY u.user_id, u.full_name
+ORDER BY order_count DESC
+LIMIT 1;
+
+--Tìm người dùng không hoạt động trong hệ thống (không đặt hàng, không like, không đánh giá nhà hàng)
+SELECT u.user_id, u.full_name
+FROM users u
+LEFT JOIN orders o ON u.user_id = o.user_id
+LEFT JOIN like_res lr ON u.user_id = lr.user_id
+LEFT JOIN rate_res rr ON u.user_id = rr.user_id
+WHERE o.user_id IS NULL
+  AND lr.user_id IS NULL
+  AND rr.user_id IS NULL;
