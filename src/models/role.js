@@ -1,26 +1,26 @@
 import _sequelize from 'sequelize';
 const { Model, Sequelize } = _sequelize;
 
-export default class employees extends Model {
+export default class role extends Model {
   static init(sequelize, DataTypes) {
   return super.init({
-    user_id: {
+    role_id: {
       autoIncrement: true,
       type: DataTypes.INTEGER,
       allowNull: false,
       primaryKey: true
     },
-    user_name: {
+    role_name: {
       type: DataTypes.STRING(50),
       allowNull: true
     },
-    line_manager_id: {
-      type: DataTypes.INTEGER,
+    list_permission: {
+      type: DataTypes.STRING(255),
       allowNull: true
     }
   }, {
     sequelize,
-    tableName: 'employees',
+    tableName: 'role',
     timestamps: false,
     indexes: [
       {
@@ -28,7 +28,7 @@ export default class employees extends Model {
         unique: true,
         using: "BTREE",
         fields: [
-          { name: "user_id" },
+          { name: "role_id" },
         ]
       },
     ]
