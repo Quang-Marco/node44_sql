@@ -1,9 +1,15 @@
 import { Sequelize } from "sequelize";
+import configDb from "../config/connect_db.js";
 
-const sequelize = new Sequelize("node44_youtube", "root", "123456", {
-  host: "localhost",
-  port: 3307,
-  dialect: "mysql",
-});
+const sequelize = new Sequelize(
+  configDb.database,
+  configDb.user,
+  configDb.pass,
+  {
+    host: configDb.host,
+    port: configDb.port,
+    dialect: configDb.dialect,
+  }
+);
 
 export default sequelize;
