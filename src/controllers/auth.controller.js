@@ -1,6 +1,7 @@
 import initModels from "../models/init-models.js";
 import sequelize from "../models/connect.js";
 import bcrypt from "bcrypt";
+import crypto from "crypto";
 import transporter from "../config/transporter.js";
 import {
   createRefreshToken,
@@ -200,4 +201,87 @@ const loginAsyncKey = async (req, res) => {
   }
 };
 
-export { register, login, loginFacebook, extendToken, loginAsyncKey };
+const forgotPassword = async (req, res) => {
+  try {
+    let { email } = req.body;
+
+    let user = await model.users.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: "Email not found" });
+    }
+
+    // tạo mã xác nhận
+    const randomCode = crypto.randomBytes(5).toString("hex");
+    // cập nhật mã xác nhận vào db
+    await model.code.create({
+      code: randomCode,
+      expired: new Date(new Date().getTime() + 1 * 60 * 60 * 1000),
+    });
+
+    // cấu hình info email
+    const mailOption = {
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: "Reset Password Code",
+      // text: `Hello! Your reset password code is ${randomCode}. Please use this code to reset your password. If you didn't request this, please ignore this email.`,
+      html: `<p>Hello! Your reset password code is: <h1>${randomCode}</h1>. Please use this code to reset your password. If you didn't request this, please ignore this email.</p>`,
+    };
+    // sendEmail(mailOption);
+    transporter.sendMail(mailOption, (err, info) => {
+      if (err) {
+        return res.status(500).json({ message: "Error sending email" });
+      }
+      return res
+        .status(200)
+        .json({ message: "Reset password code has been sent to your email" });
+    });
+
+    return res.status(200).json({ message: "success" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "error" });
+  }
+};
+
+const changePassword = async (req, res) => {
+  try {
+    let { email, code, pass } = req.body;
+
+    let user = await model.users.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: "Email not found" });
+    }
+    let codeDB = await model.code.findOne({ where: { code } });
+    if (!codeDB) {
+      return res.status(401).json({ message: "Invalid code" });
+    }
+
+    // mã hóa password mới
+    const hashedPass = bcrypt.hashSync(pass, 10);
+    await model.users.update(
+      { pass_word: hashedPass },
+      { where: { user_id: user.user_id } }
+    );
+    // user.password = hashedPass;
+    // user.save();
+
+    await model.code.destroy({ where: { code } });
+
+    return res
+      .status(200)
+      .json({ message: "Password has been changed successfully" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "error" });
+  }
+};
+
+export {
+  register,
+  login,
+  loginFacebook,
+  extendToken,
+  loginAsyncKey,
+  forgotPassword,
+  changePassword,
+};

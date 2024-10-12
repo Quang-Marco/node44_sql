@@ -1,10 +1,10 @@
 {
-  "name": "app-food",
+  "name": "node44",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "cd ./src && npx mocha",
+    "test": "cd src && mocha 'test/**/*.js'",
     "start": "nodemon index.js"
   },
   "author": "",
@@ -15,6 +15,7 @@
     "chai": "^5.1.1",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
+    "crypto": "^1.0.1",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.2",

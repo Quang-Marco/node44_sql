@@ -1,9 +1,9 @@
+import sequelize from "../../models/connect.js";
+import initModels from "../../models/init-models.js";
+import { getListVideos } from "../../controllers/video.controller.js";
 import { afterEach, beforeEach, describe } from "mocha";
 import { expect } from "chai";
 import sinon from "sinon"; // thư viện mock - giả lập
-import sequelize from "../models/connect.js";
-import initModels from "../models/init-models.js";
-import { getListVideos } from "../controllers/video.controller.js";
 
 const model = initModels(sequelize);
 
@@ -43,5 +43,7 @@ describe("getVideos", () => {
     await getListVideos(req, res);
 
     expect(res.status.calledWith(200)).to.be.true;
+
+    expect(res.json.calledWith(videos)).to.be.true;
   });
 });
