@@ -9,12 +9,15 @@ import {
   createToken,
   createTokenAsyncKey,
 } from "../config/jwt.js";
+import { PrismaClient } from "@prisma/client";
+import speakeasy from "speakeasy";
 
 const model = initModels(sequelize);
 
+const prisma = new PrismaClient();
+
 const register = async (req, res) => {
   try {
-    // post sẽ nhận qua body
     let { fullName, email, pass } = req.body;
     // validate email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -31,20 +34,26 @@ const register = async (req, res) => {
     // validate fullName
     // ...
 
-    // B2: kiểm tra email đã tồn tại trong db hay chưa
-    const userExist = await model.users.findOne({
-      where: { email: email },
-    });
+    // Kiểm tra xem email đã đăng ký tài khoản trước đó hay chưa
+    // const userExist = await model.users.findOne({
+    //   where: { email },
+    // });
+    const userExist = await prisma.users.findFirst({ where: { email } });
     if (userExist) {
       return res.status(400).json({ message: "Tài khoản đã tồn tại" });
     }
 
-    //B3: Thêm người dùng mới vào db
-    const newUser = await model.users.create({
-      full_name: fullName,
-      email: email,
-      // mã hóa password
-      pass_word: bcrypt.hashSync(pass, 10),
+    // Tạo secret cho login 2 lớp
+    const secret = speakeasy.generateSecret({ length: 15 });
+
+    // Thêm người dùng mới vào db
+    const newUser = await prisma.users.create({
+      data: {
+        full_name: fullName,
+        email,
+        pass_word: bcrypt.hashSync(pass, 10),
+        secret: secret.base32,
+      },
     });
 
     // Cấu hình info email
@@ -61,11 +70,12 @@ const register = async (req, res) => {
         return res.status(500).json({ message: "Error sending email" });
       }
       return res.status(200).json({
-        message: "Đăng ký thành công",
+        message: "Registered successfully",
         data: newUser,
       });
     });
   } catch (error) {
+    console.log(error);
     return res.status(500).json({ message: "error" });
   }
 };
@@ -167,6 +177,7 @@ const extendToken = async (req, res) => {
 const loginAsyncKey = async (req, res) => {
   try {
     let { email, pass } = req.body;
+
     let user = await model.users.findOne({ where: { email: email } });
     if (!user) {
       return res.status(404).json({ message: "Email not found" });
