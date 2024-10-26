@@ -38,20 +38,20 @@ const getUser = async (req, res) => {
           [Op.like]: `%${full_name}%`,
         },
       },
-      include: [
-        {
-          model: model.video,
-          as: "videos",
-          attributes: ["video_name", "user_id"],
-          required: true, // default sẽ kết bảng theo left join, muốn inner join thì true
-          include: [
-            {
-              model: model.video_comment,
-              as: "video_comments",
-            },
-          ],
-        },
-      ],
+      // include: [
+      //   {
+      //     model: model.video,
+      //     as: "videos",
+      //     attributes: ["video_name", "user_id"],
+      //     required: true, // default sẽ kết bảng theo left join, muốn inner join thì true
+      //     include: [
+      //       {
+      //         model: model.video_comment,
+      //         as: "video_comments",
+      //       },
+      //     ],
+      //   },
+      // ],
     });
     return res.status(OK).json(data);
   } catch (error) {
@@ -122,4 +122,29 @@ const deleteUser = async (req, res) => {
   }
 };
 
-export { createUser, getUser, deleteUser, updateUser };
+const uploadAvatar = async (req, res) => {
+  try {
+    let file = req.file;
+    let userId = req.body.userId;
+
+    let user = prisma.users.findFirst({ where: { user_id: +userId } });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    let avatarPath = `/public/imgs/${file.filename}`;
+    await prisma.users.update({
+      data: { avatar: avatarPath },
+      where: { user_id: +userId },
+    });
+
+    res
+      .status(200)
+      .json({ data: avatarPath, message: "Upload avatar successfully" });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "error" });
+  }
+};
+
+export { createUser, getUser, deleteUser, updateUser, uploadAvatar };

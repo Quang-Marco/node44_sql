@@ -25,11 +25,11 @@ const register = async (req, res) => {
       return res.status(400).json({ message: "Email is invalid" });
     }
     // validate pass
-    const passRegex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passRegex.test(pass)) {
-      return res.status(400).json({ message: "Password is invalid" });
-    }
+    // const passRegex =
+    //   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    // if (!passRegex.test(pass)) {
+    //   return res.status(400).json({ message: "Password is invalid" });
+    // }
 
     // validate fullName
     // ...
@@ -176,9 +176,9 @@ const extendToken = async (req, res) => {
 
 const loginAsyncKey = async (req, res) => {
   try {
-    let { email, pass } = req.body;
+    let { email, pass, code } = req.body;
 
-    let user = await model.users.findOne({ where: { email: email } });
+    let user = await prisma.users.findFirst({ where: { email } });
     if (!user) {
       return res.status(404).json({ message: "Email not found" });
     }
@@ -188,6 +188,17 @@ const loginAsyncKey = async (req, res) => {
     if (!isMatch) {
       return res.status(401).json({ message: "Password is wrong" });
     }
+
+    const verified = speakeasy.totp.verify({
+      secret: user.secret,
+      encoding: "base32",
+      token: code,
+    });
+
+    if (!verified) {
+      return res.status(401).json({ message: "Code is wrong" });
+    }
+
     // tạo token JWT
     let token = createTokenAsyncKey({ userId: user.user_id });
     let refreshToken = createRefreshTokenAsyncKey({ userId: user.user_id });
